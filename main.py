@@ -11,9 +11,9 @@ file_uploader = st.sidebar.file_uploader("", ["jpg", "png", "jpeg", "gif"])
 
 if file_uploader is not None:
     image = file_uploader.read()
-    with open(f"Data/{file_uploader.name}", "wb+") as f:
+    with open(f"ImageStorage/{file_uploader.name}", "wb+") as f:
         f.write(image)
-    img = cv2.imread(f"Data/{file_uploader.name}")
+    img = cv2.imread(f"ImageStorage/{file_uploader.name}")
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
     img_copy = img.copy()
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
