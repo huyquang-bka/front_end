@@ -1,2 +1,5 @@
 streamlit
 numpy
+easyocr
+opencv-python
+tensorflow==2.4.1
