@@ -48,7 +48,7 @@ if file_uploader is not None:
         if lp_text:
             thre_mor, text = process_image_chracter(crop)
             st.image(thre_mor, use_column_width=True)
-            st.markdown(f"LP Number: **{text}**")
+            st.title(f"**LP Number: {text}**".upper())
     except:
         st.sidebar.markdown("**CAN'T FIND License Plate**".upper(), unsafe_allow_html=True)
         st.markdown("**CAN'T FIND License Plate**".upper(), unsafe_allow_html=True)
