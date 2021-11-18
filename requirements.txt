@@ -1,5 +1,5 @@
 streamlit
 numpy
 easyocr
-opencv-python
+opencv-python==4.4.0.44
 tensorflow==2.4.1
