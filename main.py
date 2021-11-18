@@ -1,10 +1,15 @@
 import streamlit as st
 from OCR import *
 from Plate import *
+from PIL import Image
 
-
+logo = Image.open("pikachu-logo-619ACB690E-seeklogo.com.png")
+st.set_page_config(layout="wide", page_title="AUTOMATIC LICENSE PLATE RECOGNITION BY HUY QUANG", page_icon=logo)
 st.title("automatic license plate recognition".upper())
-st.sidebar.title("SETTINGS")
+st.sidebar.title("SIDE BAR")
+st.sidebar.markdown("-" * 20)
+link = '[Go to github repository and give me a star \N{grinning face with smiling eyes} ](https://github.com/huyquang-bka/front_end)'
+st.sidebar.markdown(f"{link}", unsafe_allow_html=True)
 st.sidebar.markdown("-" * 20)
 st.sidebar.markdown("Upload license plate image  here!".upper())
 file_uploader = st.sidebar.file_uploader("", ["jpg", "png", "jpeg", "gif"])
