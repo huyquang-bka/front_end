@@ -11,7 +11,7 @@ st.sidebar.markdown("-" * 20)
 link = '[Go to github repository and give me a star \N{grinning face with smiling eyes} ](https://github.com/huyquang-bka/front_end)'
 st.sidebar.markdown(f"{link}", unsafe_allow_html=True)
 st.sidebar.markdown("-" * 20)
-st.sidebar.markdown("Upload license plate image  here!".upper())
+st.sidebar.markdown("Upload license plate image or Car with license plate here!\n Only for horizontal plate".upper())
 file_uploader = st.sidebar.file_uploader("", ["jpg", "png", "jpeg", "gif"])
 
 if file_uploader is not None:
