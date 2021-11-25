@@ -5,6 +5,7 @@ import os
 import easyocr
 import string
 
+allow_list = string.ascii_uppercase + string.digits
 reader = easyocr.Reader(lang_list=["en"])
 
 wpod_net_path = "wpod-net_update1.json"
@@ -56,18 +57,28 @@ def plate_detection(Ivehicle):
     try:
         _, LpImg, lp_type = detect_lp(wpod_net, im2single(Ivehicle), bound_dim, lp_threshold=0.5)
     except:
-        return False, False
+        return False, False, False
 
     # Cau hinh tham so cho model SVM
 
     if not (len(LpImg)):
-        return False, False
+        return False, False, False
         # Chuyen doi anh bien so
     LpImg[0] = cv2.convertScaleAbs(LpImg[0], alpha=(255.0))
 
     roi = LpImg[0]
 
-    return True, roi
+    gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+
+    # Ap dung threshold de phan tach so va nen
+    binary = cv2.threshold(gray, 0, 255,
+                           cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+
+    # Segment kí tự
+    kernel3 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    thre_mor = cv2.morphologyEx(binary, cv2.MORPH_ERODE, kernel3)
+
+    return True, roi, thre_mor
 
 
 def process_image(image):
@@ -131,7 +142,7 @@ def process_image_chracter(image):
         if not check_contours(x, y, w, h, ls_cnts):
             continue
         ls_cnts.append([x, y, w, h])
-        cv2.rectangle(image, (x - 2, y - 4), (x + w + 2, y + h + 4), (0, 0, 255), 0)
+        # cv2.rectangle(image, (x - 2, y - 4), (x + w + 2, y + h + 4), (0, 0, 255), 0)
         roi = thre_mor[y - 4:y + h + 4, x - 2:x + w + 2]
         count += 1
         if count == 3:
@@ -141,18 +152,86 @@ def process_image_chracter(image):
         # roi = cv2.resize(roi, dsize=None, fx=3, fy=3)
         try:
             (_, t, conf) = reader.readtext(roi, allowlist=allow_list, decoder="greedy", min_size=5,
-                                text_threshold=0.4, low_text=0.2, link_threshold=0.2, mag_ratio=3)[0]
+                                           text_threshold=0.4, low_text=0.2, link_threshold=0.2, mag_ratio=3)[0]
             print(count, t, conf)
             if conf > 0.1:
                 lp_text += t
         except:
             pass
 
-    # cv2.imshow("ROI", roi)
-    # cv2.waitKey()
-    # cv2.destroyAllWindows()
     print("-" * 50)
     return thre_mor, lp_text
+
+
+def is_LP_square(image):
+    H, W = image.shape[:2]
+    if W / H > 2.5:
+        return False
+    return True
+
+
+def CCA(image):
+    H, W = image.shape[:2]
+    output = cv2.connectedComponentsWithStats(
+        image, 4, cv2.CV_32S)
+    (numLabels, labels, stats, centroids) = output
+    bboxes = []
+    for i in range(2, numLabels):
+        x = stats[i, cv2.CC_STAT_LEFT]
+        y = stats[i, cv2.CC_STAT_TOP]
+        w = stats[i, cv2.CC_STAT_WIDTH]
+        h = stats[i, cv2.CC_STAT_HEIGHT]
+        area = stats[i, cv2.CC_STAT_AREA]
+        (cX, cY) = centroids[i]
+        if H / h > 10:
+            continue
+        if (y <= 10 or y + h > H - 10) and (x < 10 or x + w > W - 10    ):
+            continue
+        bboxes.append([x, y, w, h])
+    return bboxes
+
+
+def bboxes_square_LP(image):
+    bboxes = CCA(image)
+    y_mean = sum([i[1] for i in bboxes]) / len(bboxes)
+    line1 = []
+    line2 = []
+    for bbox in bboxes:
+        x, y, w, h = bbox
+        if y < y_mean:
+            line1.append([x, y, w, h])
+        else:
+            line2.append([x, y, w, h])
+    line1 = sorted(line1)
+    line2 = sorted(line2)
+    bboxes_LP = line1 + line2
+    return bboxes_LP
+
+
+def bboxes_rec_LP(image):
+    bboxes = CCA(image)
+    return sorted(bboxes)
+
+
+def process_LP(crop, image, allow_list):
+    lp_text = ""
+    if is_LP_square(image):
+        LP = bboxes_square_LP(image)
+    else:
+        LP = bboxes_rec_LP(image)
+    extend = 3
+    for x, y, w, h in LP:
+        roi = image[y - extend:y + h + extend, x - extend:x + w + extend]
+        cv2.rectangle(crop, (x - extend, y - extend), (x + w + extend, y + h + extend), (0, 255, 0), 2)
+        try:
+            (_, t, conf) = reader.readtext(roi, allowlist=allow_list, decoder="greedy", min_size=5,
+                                           text_threshold=0.4, low_text=0.2, link_threshold=0.2, mag_ratio=3)[0]
+            if conf > 0.1:
+                lp_text += t
+                cv2.putText(crop, t, (x, y + 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+        except:
+            pass
+    return crop, image, lp_text
 
 
 if __name__ == '__main__':

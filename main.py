@@ -1,7 +1,7 @@
-import streamlit as st
 from OCR import *
 from Plate import *
 from PIL import Image
+import streamlit as st
 
 logo = Image.open("pikachu-logo-619ACB690E-seeklogo.com.png")
 st.set_page_config(layout="wide", page_title="AUTOMATIC LICENSE PLATE RECOGNITION BY HUY QUANG", page_icon=logo)
@@ -24,10 +24,11 @@ if file_uploader is not None:
     img_copy = img.copy()
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     st.sidebar.image(img)
-    st.image(img, use_column_width=True)
+    st.image(img)
     try:
-        status, crop = plate_detection(img_copy)
-        st.image(crop, use_column_width=True)
+        status, crop, thres_mor = plate_detection(img_copy)
+        st.image(crop)
+        st.image(thres_mor)
         st.markdown("-" * 20)
         block_list_check = st.checkbox("Block list detection (Number + Alphaber UpperCase + special characters)")
         if block_list_check:
@@ -47,9 +48,9 @@ if file_uploader is not None:
         allow_list = process_allowlist(block_list)
         lp_text = st.button("LP to text")
         if lp_text:
-            thre_mor, text = process_image_chracter(crop)
-            st.image(thre_mor, use_column_width=True)
+            crop, thre_mor, text = process_LP(crop, thres_mor, allow_list)
+            st.image(crop)
             st.title(f"**LP Number: {text}**".upper())
     except:
-        st.sidebar.markdown("**CAN'T FIND License Plate**".upper(), unsafe_allow_html=True)
-        st.markdown("**CAN'T FIND License Plate**".upper(), unsafe_allow_html=True)
+        st.sidebar.markdown("**CAN'T FIND or read License Plate**".upper(), unsafe_allow_html=True)
+        st.markdown("**CAN'T FIND or read License Plate**".upper(), unsafe_allow_html=True)
